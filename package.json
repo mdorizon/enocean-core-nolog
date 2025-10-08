@@ -1,6 +1,6 @@
 {
   "name": "enocean-core-nolog",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "TypeScript EnOcean library for Node.js reduced (no known-devices filesystem restriction).",
   "author": "Henning Kerstan <mail@henningkerstan.de>, Maxence Dorizon <mdorizon@proton.me>",
   "license": "Apache-2.0",

@@ -23,20 +23,26 @@ import * as path from 'path'
 import { EEPId } from '../eep/EEPId'
 import { JSONFileDeviceInfoMapEntry } from './JSONFileDeviceInfoMapEntry'
 
-/**
- * This is a minimal, straightforward file based implementation of the {@link DeviceInfoMap} interface using JSON serialization. There is no added functionality, the functions correspond exactly to the interface {@link DeviceInfoMap}.
- */
 export class JSONFileDeviceInfoMap implements DeviceInfoMap {
   private jsonFile: string =
     path.dirname(require.main.filename) + '/.known_enocean_devices.json'
   private devices: Map<string, DeviceInfo> = new Map()
+  private snifferMode = false
 
   /**
    * Returns a new map using the default file ('.known_enocean_devices.json')
-   * in the folder from which the program is invoked.
-   * */
+   */
   static defaultFile(): JSONFileDeviceInfoMap {
     return new JSONFileDeviceInfoMap()
+  }
+
+  /**
+   * Returns a new map in sniffer mode (ignores the filesystem restriction)
+   */
+  static snifferMode(): JSONFileDeviceInfoMap {
+    const map = new JSONFileDeviceInfoMap()
+    map.snifferMode = true
+    return map
   }
 
   private constructor() {
@@ -48,7 +54,6 @@ export class JSONFileDeviceInfoMap implements DeviceInfoMap {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       devices.forEach((value: JSONFileDeviceInfoMapEntry, key: any) => {
-        // TODO: improve! (not use any etc.)
         const info = new DeviceInfo()
         info.deviceId = DeviceId.fromString(value.deviceId)
         info.label = value.label
@@ -58,7 +63,7 @@ export class JSONFileDeviceInfoMap implements DeviceInfoMap {
         info.teachInMethod = value.teachInMethod
         this.devices.set(DeviceId.fromString(key).toString(), info)
       })
-    } else {
+    } else if (!this.snifferMode) {
       console.log('could not read known EnOcean devices from filesystem')
     }
   }
@@ -93,7 +98,9 @@ export class JSONFileDeviceInfoMap implements DeviceInfoMap {
   }
 
   private storeToFile() {
-    const json = JSON.stringify(Array.from(this.devices.entries()))
-    fs.writeFileSync(this.jsonFile, json)
+    if (!this.snifferMode) {
+      const json = JSON.stringify(Array.from(this.devices.entries()))
+      fs.writeFileSync(this.jsonFile, json)
+    }
   }
 }

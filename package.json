@@ -1,8 +1,8 @@
 {
-  "name": "enocean-core",
+  "name": "enocean-core-sniffer",
   "version": "0.8.3",
-  "description": "A TypeScript implementation of the core functionality of the EnOcean protocol for Node.js.",
-  "author": "Henning Kerstan <mail@henningkerstan.de>",
+  "description": "TypeScript EnOcean library for Node.js with an optional sniffer mode (no known-devices filesystem restriction).",
+  "author": "Henning Kerstan <mail@henningkerstan.de>, Maxence Dorizon <mdorizon@proton.me>",
   "license": "Apache-2.0",
   "files": [
     "lib/**/*"

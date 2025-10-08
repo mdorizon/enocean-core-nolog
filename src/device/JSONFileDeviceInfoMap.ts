@@ -24,10 +24,11 @@ import { EEPId } from '../eep/EEPId'
 import { JSONFileDeviceInfoMapEntry } from './JSONFileDeviceInfoMapEntry'
 
 export class JSONFileDeviceInfoMap implements DeviceInfoMap {
-  private jsonFile: string =
-    path.dirname(require.main.filename) + '/.known_enocean_devices.json'
+  private jsonFile: string = path.join(
+    process.cwd(),
+    '.known_enocean_devices.json'
+  )
   private devices: Map<string, DeviceInfo> = new Map()
-  private snifferMode = false
 
   /**
    * Returns a new map using the default file ('.known_enocean_devices.json')
@@ -36,39 +37,31 @@ export class JSONFileDeviceInfoMap implements DeviceInfoMap {
     return new JSONFileDeviceInfoMap()
   }
 
-  /**
-   * Returns a new map in sniffer mode (ignores the filesystem restriction)
-   */
-  static snifferMode(): JSONFileDeviceInfoMap {
-    const map = new JSONFileDeviceInfoMap()
-    map.snifferMode = true
-    return map
-  }
-
   private constructor() {
-    if (fs.existsSync(this.jsonFile)) {
-      const fileContent = fs.readFileSync(this.jsonFile, { encoding: 'utf8' })
-      const devices = new Map<string, JSONFileDeviceInfoMapEntry>(
-        JSON.parse(fileContent)
-      )
+    try {
+      if (fs.existsSync(this.jsonFile)) {
+        const fileContent = fs.readFileSync(this.jsonFile, { encoding: 'utf8' })
+        const devices = new Map<string, JSONFileDeviceInfoMapEntry>(
+          JSON.parse(fileContent)
+        )
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      devices.forEach((value: JSONFileDeviceInfoMapEntry, key: any) => {
-        const info = new DeviceInfo()
-        info.deviceId = DeviceId.fromString(value.deviceId)
-        info.label = value.label
-        info.eep = EEPId.fromString(value.eep)
-        info.localId = DeviceId.fromString(value.localId)
-        info.manufacturer = value.manufacturer
-        info.teachInMethod = value.teachInMethod
-        this.devices.set(DeviceId.fromString(key).toString(), info)
-      })
-    } else if (!this.snifferMode) {
-      console.log('could not read known EnOcean devices from filesystem')
+        devices.forEach((value: JSONFileDeviceInfoMapEntry, key: string) => {
+          const info = new DeviceInfo()
+          info.deviceId = DeviceId.fromString(value.deviceId)
+          info.label = value.label
+          info.eep = EEPId.fromString(value.eep)
+          info.localId = DeviceId.fromString(value.localId)
+          info.manufacturer = value.manufacturer
+          info.teachInMethod = value.teachInMethod
+          this.devices.set(DeviceId.fromString(key).toString(), info)
+        })
+      }
+    } catch {
+      // no console log
     }
   }
 
-  get(device: DeviceId): DeviceInfo {
+  get(device: DeviceId): DeviceInfo | undefined {
     return this.devices.get(device.toString())
   }
 
@@ -88,7 +81,8 @@ export class JSONFileDeviceInfoMap implements DeviceInfoMap {
   }
 
   clear(): void {
-    throw new Error('CLEAR not yet implemented')
+    this.devices.clear()
+    this.storeToFile()
   }
 
   forEach(callbackfn: (info: DeviceInfo, device: DeviceId) => void): void {
@@ -97,10 +91,12 @@ export class JSONFileDeviceInfoMap implements DeviceInfoMap {
     })
   }
 
-  private storeToFile() {
-    if (!this.snifferMode) {
-      const json = JSON.stringify(Array.from(this.devices.entries()))
+  private storeToFile(): void {
+    try {
+      const json = JSON.stringify(Array.from(this.devices.entries()), null, 2)
       fs.writeFileSync(this.jsonFile, json)
+    } catch {
+      // no console log
     }
   }
 }
